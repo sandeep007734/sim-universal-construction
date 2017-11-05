@@ -101,7 +101,7 @@ void SHARED_OBJECT_INIT(int pid) {
     }
 }
 
-inline void push(SimStackThreadState *th_state, HalfObjectState *st, ArgVal arg) {
+inline static void push(SimStackThreadState *th_state, HalfObjectState *st, ArgVal arg) {
 #ifdef DEBUG
     st->counter += 1;
 #endif
@@ -112,7 +112,7 @@ inline void push(SimStackThreadState *th_state, HalfObjectState *st, ArgVal arg)
     st->head = n;
 }
 
-inline void pop(HalfObjectState *st, int pid) {
+inline static void pop(HalfObjectState *st, int pid) {
 #ifdef DEBUG
     st->counter += 1;
 #endif
@@ -123,7 +123,7 @@ inline void pop(HalfObjectState *st, int pid) {
     else st->ret[pid] = (RetVal)-1;
 }
 
-inline RetVal apply_op(SimStackThreadState *th_state, ArgVal arg, int pid) {
+static inline RetVal apply_op(SimStackThreadState *th_state, ArgVal arg, int pid) {
     ToggleVector diffs, l_toggles, pops;
     pointer_t new_sp, old_sp;
     HalfObjectState *lsp_data, *sp_data;
@@ -217,7 +217,7 @@ pthread_barrier_t barr CACHE_ALIGN;
 int64_t d1 CACHE_ALIGN, d2;
 
 
-inline void Execute(void* Arg) {
+static inline void Execute(void* Arg) {
     SimStackThreadState th_state;
     long i;
     long rnum;
@@ -256,7 +256,7 @@ inline static void* EntryPoint(void* Arg) {
     return null;
 }
 
-inline pthread_t StartThread(int arg) {
+inline static pthread_t StartThread(int arg) {
     long id = (long) arg;
     void *Arg = (void*) id;
     pthread_t thread_p;
@@ -275,7 +275,7 @@ int main(int argc, char *argv[]) {
 
     init_cpu_counters();
     if (argc != 2) {
-        fprintf(stderr, "ERROR: Please set an upper bound for the backoff!\n");
+        fprintf(stderr, "ERROR: Please set an upper bound for the backoff!. Argc count is : %d it should be 2.\n",argc);
         exit(EXIT_SUCCESS);
     } else {
         sscanf(argv[1], "%d", &MAX_BACK);

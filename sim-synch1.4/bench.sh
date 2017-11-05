@@ -2,14 +2,16 @@
 
 rm -f a.out res.txt;
 
-echo "INFO: Apropriate script use: run.sh FILE N_THREADS UPPER_BACKOFF";
+echo "INFO: Apropriate script use: bench.sh FILE N_THREADS UPPER_BACKOFF";
 echo "INFO: This script runs FILE 10 times using N_THREADS and calulates average exection time";
 
 # Please uncomment one of the following compiling instruction
 # that fits to your needs.
 
 # gcc on X86
-gcc $1 -Wall -O3 -msse3 -ftree-vectorize -ftree-vectorizer-verbose=0 -finline-functions -lpthread -march=native -mtune=native -DN_THREADS=$2 -DUSE_CPUS=$3 -D_GNU_SOURCE -pipe -lm
+#gcc $1 -Wall -O3 -msse3 -ftree-vectorize -ftree-vectorizer-verbose=0 -finline-functions -lpthread -march=native -mtune=native -DN_THREADS=$2 -DUSE_CPUS=$3 -D_GNU_SOURCE -pipe -lm
+
+gcc -pthread -D_GNU_SOURCE  -DN_THREADS=$2 $1
 
 # icc on X86
 #icc $1 -xW -gcc -O3 -ipo -pthread -DN_THREADS=$2 -DUSE_CPUS=$3 -D_GNU_SOURCE
@@ -23,8 +25,11 @@ gcc $1 -Wall -O3 -msse3 -ftree-vectorize -ftree-vectorizer-verbose=0 -finline-fu
 
 #export LD_PRELOAD="./libhoard.so";
 
+echo "Compilation done. Running the code"
+
 for a in {1..10};do
-    ./a.out $4 $5 >> res.txt;
+    #./a.out $4 $5 >> res.txt;
+    ./a.out $3 $4 >> res.txt;
     tail -1 res.txt;
 done;
 
