@@ -14,131 +14,25 @@
 
 #define POP                        -1
 
-// Struct to hold the data
-typedef struct Node{
-    volatile struct Node *next; // Pointer to the next node.
-    Object value;               // Value to be stored.
-} Node;
+#define DEBUG
 
-// This is the State which is mentioend in tje papers.
-typedef struct HalfObjectState {
-    ToggleVector applied;
-    Node *head;
-    Object ret[N_THREADS];
-#ifdef DEBUG
-    int counter;
-#endif
-} HalfObjectState;
-
-
-// Then what is this thing.
-// THis just contains a pad. THis will help in the making sure the cache coherence is protected.
-typedef struct ObjectState {
-    ToggleVector applied;
-    Node *head;
-    Object ret[N_THREADS];
-#ifdef DEBUG
-    int counter;
-#endif
-    int32_t pad[PAD_CACHE(sizeof(HalfObjectState))];
-} ObjectState;
-
-
-// 48 bits for  the sequence number and then 16 bits for indexing into it.
-typedef union pointer_t {
-	struct StructData{
-        int64_t seq : 48;
-        int32_t index : 16;
-	} struct_data;
-	int64_t raw_data;
-} pointer_t;
-
-// Shared variables
-static int MAX_BACK = 0;
-volatile pointer_t sp CACHE_ALIGN;
-volatile ToggleVector a_toggles CACHE_ALIGN;
-// _TVEC_BIWORD_SIZE_ is a performance workaround for 
-// array announce. Size N_THREADS is algorithmically enough.
-volatile ArgVal announce[N_THREADS + _TVEC_BIWORD_SIZE_] CACHE_ALIGN;
-volatile ObjectState pool[LOCAL_POOL_SIZE * N_THREADS + 1] CACHE_ALIGN;
-
-
-typedef struct SimStackThreadState {
-    PoolStruct pool_node;
-    ToggleVector mask CACHE_ALIGN;
-    ToggleVector toggle;
-    ToggleVector my_bit;
-    int local_index;
-    int backoff;
-} SimStackThreadState;
-
-void simStackThreadStateInit(SimStackThreadState *th_state, int pid) {
-    th_state->local_index = 0;
-    TVEC_SET_ZERO(&th_state->mask);
-    TVEC_SET_ZERO(&th_state->my_bit);
-    TVEC_SET_ZERO(&th_state->toggle);
-    TVEC_REVERSE_BIT(&th_state->my_bit, pid);
-    TVEC_SET_BIT(&th_state->mask, pid);
-    th_state->toggle = TVEC_NEGATIVE(th_state->mask);
-    th_state->backoff = 1;
-
-    init_pool(&th_state->pool_node, sizeof(Node));
-}
+#include "init_code.c"
+#include "stack_op.c"
 
 
 
-void SHARED_OBJECT_INIT(int pid) {
-    if (pid == 0) {
-        sp.struct_data.index = LOCAL_POOL_SIZE * N_THREADS;
-        sp.struct_data.seq = 0;
-        TVEC_SET_ZERO((ToggleVector *)&a_toggles);
-
-        // OBJECT'S INITIAL VALUE
-        // ----------------------
-        pool[LOCAL_POOL_SIZE * N_THREADS].head = null;
-
-        TVEC_SET_ZERO((ToggleVector *)&pool[LOCAL_POOL_SIZE * N_THREADS].applied);
-#ifdef DEBUG
-        pool[LOCAL_POOL_SIZE * N_THREADS].counter = 0;
-#endif
-        MAX_BACK *= 100;
-        FullFence();
-    }
-}
-
-inline static void push(SimStackThreadState *th_state, HalfObjectState *st, ArgVal arg) {
-#ifdef DEBUG
-    st->counter += 1;
-#endif
-    Node *n;
-    n = alloc_obj(&th_state->pool_node);
-    n->value = (ArgVal)arg;
-    n->next = st->head;
-    st->head = n;
-}
-
-inline static void pop(HalfObjectState *st, int pid) {
-#ifdef DEBUG
-    st->counter += 1;
-#endif
-    if(st->head != null) {
-        st->ret[pid] = (RetVal)st->head->value;
-        st->head = (Node *)st->head->next;
-    }
-    else st->ret[pid] = (RetVal)-1;
-}
 
 static inline RetVal apply_op(SimStackThreadState *th_state, ArgVal arg, int pid) {
     ToggleVector diffs, l_toggles, pops;
     pointer_t new_sp, old_sp;
-    HalfObjectState *lsp_data, *sp_data;
+    ObjectState *lsp_data, *sp_data;
     int i, j, prefix, mybank, push_counter;
     ArgVal tmp_arg;
 
     mybank = TVEC_GET_BANK_OF_BIT(pid);
     TVEC_REVERSE_BIT(&th_state->my_bit, pid);
     TVEC_NEGATIVE_BANK(&th_state->toggle, &th_state->toggle, mybank);
-    lsp_data = (HalfObjectState *)&pool[pid * LOCAL_POOL_SIZE + th_state->local_index];
+    lsp_data = (ObjectState *)&pool[pid * LOCAL_POOL_SIZE + th_state->local_index];
     announce[pid] = arg;                                                  // announce the operation
     TVEC_ATOMIC_ADD_BANK(&a_toggles, &th_state->toggle, mybank);                    // toggle pid's bit in a_toggles, Fetch&Add acts as a full write-barrier
 #if N_THREADS > USE_CPUS
@@ -158,7 +52,7 @@ static inline RetVal apply_op(SimStackThreadState *th_state, ArgVal arg, int pid
     // This is the loop mentioned in the paper.
     for (j = 0; j < 2; j++) {
         old_sp = sp;		// read reference to struct ObjectState
-        sp_data = (HalfObjectState *)&pool[old_sp.struct_data.index];    // read reference of struct ObjectState in a local variable lsp_data
+        sp_data = (ObjectState *)&pool[old_sp.struct_data.index];    // read reference of struct ObjectState in a local variable lsp_data
         TVEC_ATOMIC_COPY_BANKS(&diffs, &sp_data->applied, mybank);
         TVEC_XOR_BANKS(&diffs, &diffs, &th_state->my_bit, mybank);           // determine the set of active processes
         if (TVEC_IS_SET(diffs, pid))                                      // if the operation has already been applied return
@@ -224,12 +118,18 @@ int64_t d1 CACHE_ALIGN, d2;
 
 
 static inline void Execute(void* Arg) {
+    #ifdef DEBUG
+        printf("%s\n", "Starting the Execute");
+    #endif
     SimStackThreadState th_state;
     long i;
     long rnum;
     volatile long j;
     int id = (long) Arg;
 
+    #ifdef DEBUG
+        printf("%s\n","Initializing the Shared Objects and other variables");
+    #endif
     setThreadId(id);
     _thread_pin(id);
     simSRandom(id + 1);
@@ -263,6 +163,9 @@ inline static void* EntryPoint(void* Arg) {
 }
 // This creates a thread and returns it ?
 inline static pthread_t StartThread(int arg) {
+    #ifdef DEBUG
+        printf("Creating a thead with an id of:  %d\n", arg);
+    #endif
     long id = (long) arg;
     void *Arg = (void*) id;
     pthread_t thread_p;
@@ -281,6 +184,10 @@ int main(int argc, char *argv[]) {
     pthread_t threads[N_THREADS];
     int i;
 
+    #ifdef DEBUG
+        printf("%s\n", "Starting the program...");
+    #endif
+
     init_cpu_counters();
     if (argc != 2) {
         fprintf(stderr, "ERROR: Please set an upper bound for the backoff!. Argc count is : %d it should be 2.\n",argc);
@@ -289,15 +196,27 @@ int main(int argc, char *argv[]) {
         sscanf(argv[1], "%d", &MAX_BACK);
     }
 
+    #ifdef DEBUG
+        printf("%s\n", "Creating the barrier");
+    #endif
     if (pthread_barrier_init(&barr, NULL, N_THREADS)) {
         printf("Could not create the barrier\n");
         return -1;
     }
+    #ifdef DEBUG
+        printf("%s\n", "Creating the Barrier is successfull");
+    #endif
 
+    #ifdef DEBUG
+        printf("%s\n", "Creating the threads");
+    #endif
     // This is actually creating the thread.
     for (i = 0; i < N_THREADS; i++)
         threads[i] = StartThread(i);
 
+    #ifdef DEBUG
+        printf("%s\n","Joining the threads");
+    #endif
     // Waiting of all the theads to finish there operation.
     for (i = 0; i < N_THREADS; i++)
         pthread_join(threads[i], NULL);
