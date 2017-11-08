@@ -1,5 +1,10 @@
 #!/bin/bash
 
+if [ $# -ne 3 ]; then
+echo "Usage: bench.sh <file> <threads> <Upper bound backoff>"
+exit
+fi
+
 rm -f a.out res.txt;
 
 echo "INFO: Apropriate script use: bench.sh FILE N_THREADS UPPER_BACKOFF";
@@ -29,7 +34,7 @@ echo "Compilation done. Running the code"
 
 for a in {1..10};do
     #./a.out $4 $5 >> res.txt;
-    ./a.out $3 $4 >> res.txt;
+    ./a.out $3 >> res.txt;
     tail -1 res.txt;
 done;
 
