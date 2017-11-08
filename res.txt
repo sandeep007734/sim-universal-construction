@@ -1,10 +1,36 @@
-time: 2781	
-time: 2767	
-time: 2787	
-time: 2760	
-time: 2834	
-time: 2766	
-time: 2754	
-time: 2747	
-time: 2847	
-time: 2761	
+Starting the program...
+Creating the barrier
+Creating the Barrier is successfull
+Creating the threads
+Creating a thead with an id of:  0
+Creating a thead with an id of:  1
+Creating a thead with an id of:  2
+Creating a thead with an id of:  3
+Creating a thead with an id of:  4
+Creating a thead with an id of:  5
+Starting the Execute
+Initializing the Shared Objects and other variables
+Starting the Execute
+Initializing the Shared Objects and other variables
+Starting the Execute
+Initializing the Shared Objects and other variables
+Starting the Execute
+Initializing the Shared Objects and other variables
+Starting the Execute
+Initializing the Shared Objects and other variables
+Creating a thead with an id of:  6
+Starting the Execute
+Initializing the Shared Objects and other variables
+Creating a thead with an id of:  7
+Creating a thead with an id of:  8
+Starting the Execute
+Initializing the Shared Objects and other variables
+Creating a thead with an id of:  9
+Starting the Execute
+Initializing the Shared Objects and other variables
+Starting the Execute
+Initializing the Shared Objects and other variables
+Joining the threads
+Starting the Execute
+Initializing the Shared Objects and other variables
+time: 5252	

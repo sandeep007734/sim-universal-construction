@@ -29,8 +29,9 @@ static inline RetVal apply_op(SimStackThreadState *th_state, ArgVal arg, int pid
     int i, j, prefix, mybank, push_counter;
     ArgVal tmp_arg;
 
-    mybank = TVEC_GET_BANK_OF_BIT(pid);
-    TVEC_REVERSE_BIT(&th_state->my_bit, pid);
+	// Getting the bank. For the purpise of our code. Out entire thread will fit in bank  which will be of 32 or 64 depending on the architecture.
+    mybank = TVEC_GET_BANK_OF_BIT(pid);				// This is always returning 0. ANd by seeing the code for GET_BANK it will given something other than 0 only for pid strictly less than 4.
+    TVEC_REVERSE_BIT(&th_state->my_bit, pid);			// This is reversing the bit at mybank?
     TVEC_NEGATIVE_BANK(&th_state->toggle, &th_state->toggle, mybank);
     lsp_data = (ObjectState *)&pool[pid * LOCAL_POOL_SIZE + th_state->local_index];
     announce[pid] = arg;                                                  // announce the operation
