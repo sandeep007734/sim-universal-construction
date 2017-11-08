@@ -34,7 +34,8 @@
 // ----------------
 // Define the total number of the calls of object's 
 // operations that will be executed.
-#define RUNS                       (10000000 / N_THREADS)
+// #define RUNS                       (10000000 / N_THREADS)
+#define RUNS                       100000
 
 // Definition: DEBUG
 // -----------------
