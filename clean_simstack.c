@@ -52,27 +52,6 @@ static inline RetVal apply_op(SimStackThreadState *th_state, ArgVal arg, int pid
     // AUTHORS COMMENT: "toggle pid's bit in a_toggles, Fetch&Add acts as a full write-barrier"
     TVEC_ATOMIC_ADD_BANK(&a_toggles, &th_state->toggle, mybank);          
 
-// #if N_THREADS > USE_CPUS
-//     #ifdef DEBUG
-//         printf("%s\n", "Number of thread is more than the number of cpu. Hence trying to sched_yield.");
-//     #endif
-//         // This is generating random numbers in the range of 1 and N_THREADS. 
-//         // Not sure about there implementation.
-//     if (simRandomRange(1, N_THREADS) > 4)
-//         sched_yield();
-// #else
-//     // If we have more cpus then there is not need to yield, as there will be some cpu to run on.
-//     // This code till endoff is just backing off, spin waiting till the backoff limit is expired.
-//     volatile int k;
-//     int backoff_limit;
-
-//     if (simRandomRange(1, N_THREADS) > 1) {
-//         backoff_limit =  simRandomRange(th_state->backoff >> 1, th_state->backoff);
-//         for (k = 0; k < backoff_limit; k++)
-//             ;
-//     }
-// #endif
-
     // This is the loop mentioned in the paper.
 
     for (j = 0; j < 2; j++) {
@@ -108,10 +87,6 @@ static inline RetVal apply_op(SimStackThreadState *th_state, ArgVal arg, int pid
         TVEC_SET_ZERO(&pops);
 
         for (i = 0, prefix = 0; i < _TVEC_CELLS_; i++, prefix += _TVEC_BIWORD_SIZE_) {
-            // ReadPrefetch(&announce[prefix]);
-            // ReadPrefetch(&announce[prefix + 8]);
-            // ReadPrefetch(&announce[prefix + 16]);
-            // ReadPrefetch(&announce[prefix + 24]);
             while (diffs.cell[i] != 0L) {
                 register int pos, proc_id;
 
@@ -233,6 +208,15 @@ int main(int argc, char *argv[]) {
     } else {
         sscanf(argv[1], "%d", &MAX_BACK);
     }
+
+    printf(" N_THREADS is %d\n", N_THREADS);
+    printf(" _TVEC_BIWORD_SIZE_ is %d\n", _TVEC_BIWORD_SIZE_);
+    
+    #ifdef sparc
+        printf("%s\n", "SPARC is defined");
+    #else
+        printf("%s\n", "SPARC is NOT defined");
+    #endif
 
     if (pthread_barrier_init(&barr, NULL, N_THREADS)) {
         printf("Could not create the barrier\n");

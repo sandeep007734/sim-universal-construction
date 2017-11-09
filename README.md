@@ -16,12 +16,12 @@ gcc simstack.c -Wall -O3 -msse3 -ftree-vectorize -ftree-vectorizer-verbose=0 -fi
 `
 
 `
-gcc simstack.c -Wall -pthread
+gcc -Wall -pthread simstack.c 
 `
 
 This is working
 
-`gcc simstack.c  -pthread -D_GNU_SOURCE`
+`gcc -pthread -D_GNU_SOURCE simstack.c `
 
 Meaning of each of the flags passed:
 * Wall

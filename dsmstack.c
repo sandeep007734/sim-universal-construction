@@ -33,7 +33,9 @@ void SHARED_OBJECT_INIT(void) {
 }
 
 inline static RetVal push(ArgVal arg, int pid) {
+    printf("%s\n", "Trying to push an object" );
     Node *node = alloc_obj(&pool_node);
+    printf("%s\n", "Allocation success");
     node->next = head;
     node->val = arg;
     head = node;

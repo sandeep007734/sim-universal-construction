@@ -39,7 +39,8 @@ typedef union pointer_t {
 
 typedef struct SimStackThreadState {
     PoolStruct pool_node;
-    ToggleVector mask CACHE_ALIGN;
+    ToggleVector mask;
+    // ToggleVector CACHE_ALIGN;
     ToggleVector toggle;
     ToggleVector my_bit;
     int local_index;

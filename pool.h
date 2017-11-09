@@ -6,29 +6,37 @@
 
 #define PSIZE                   4096
 
-typedef struct HalfPoolStruct {
-    void *p[PSIZE];
-    int index;
-    int obj_size;
-} HalfPoolStruct;
+// typedef struct HalfPoolStruct {
+//     void *p[PSIZE];
+//     int index;
+//     int obj_size;
+// } HalfPoolStruct;
 
 
 typedef struct PoolStruct {
     void *p[PSIZE];
     int index;
     int obj_size;
-    int32_t align[PAD_CACHE(sizeof(HalfPoolStruct))];
+    //int32_t align[PAD_CACHE(sizeof(HalfPoolStruct))];
 } PoolStruct;
 
 inline static void init_pool(PoolStruct *pool, int obj_size) {
+    if(obj_size != 16)
+        printf("%s %d\n","Object size is: ",obj_size );
     void *objects;
     int i;
 
-    objects = getAlignedMemory(CACHE_LINE_SIZE, PSIZE * obj_size);
+    // objects = getAlignedMemory(CACHE_LINE_SIZE, PSIZE * obj_size);
+    objects = malloc(PSIZE*obj_size);
+    // printf("%s %ul\n", "Objects: ",objects);
     pool->obj_size = obj_size;
     pool->index = 0;
-    for (i = 0; i < PSIZE; i++)
+    for (i = 0; i < PSIZE; i++){
          pool->p[i] = (void *)(objects + (int)(i * obj_size));
+        // pool->p[i] = (void *)(malloc                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        (i * obj_size));
+    }
+    // printf("%s %ul\n", "Pool[0]: ",pool->p[0]);
+
 }
 
 inline static void *alloc_obj(PoolStruct *pool) {
