@@ -14,6 +14,7 @@
 
 #define POP                        -1
 #define PUSH                        1
+// #define DEBUG
 
 
 
@@ -30,18 +31,34 @@ static inline RetVal apply_op(SimStackThreadState *th_state, ArgVal arg, int pid
     int i, j, prefix, mybank, push_counter;
     ArgVal tmp_arg;
 
-	// Getting the bank. For the purpise of our code. Out entire thread will fit in bank  which will be of 32 or 64 depending on the architecture.
-    // This is always returning 0. ANd by seeing the code for GET_BANK it will given something other than 0 only for pid strictly less than 4.
     mybank = TVEC_GET_BANK_OF_BIT(pid);				
 
+#ifdef DEBUG
+    printf("%s\n\n", "");
     // For this code this wale toggle the bit  at position pid.
-    TVEC_REVERSE_BIT(&th_state->my_bit, pid);
+    if(arg==PUSH){
+        printf("%s\n", "Push Operation");
+    }else{
+        printf("%s\n","Pop Operation");
+    }
+    printf("%s\n","Cell");
+    binprintf((&th_state->my_bit)->cell[mybank]);
+#endif
 
-    // It assigns value at 2nd argument[bank] to the first after negating it.
-    // Here as first and second argument are same, hence it just toggles the sign for the bit.
+    TVEC_REVERSE_BIT(&th_state->my_bit, pid);
+    // printf("%s\n","Cell After");
+    #ifdef DEBUG
+    binprintf((&th_state->my_bit)->cell[mybank]);
+    printf("%s\n", "State Toggle: ");
+    binprintf((&th_state->toggle)->cell[mybank]);
+    #endif
     TVEC_NEGATIVE_BANK(&th_state->toggle, &th_state->toggle, mybank);
 
+    #ifdef DEBUG
+    binprintf((&th_state->toggle)->cell[mybank]);
+    #endif
     // This is a shared pool and each thread is assigned a part of it, based on its pid.
+    // It seems like each thread has it personal space and do not need to worry about other threads?
     lsp_data = (ObjectState *)&pool[pid * LOCAL_POOL_SIZE + th_state->local_index];
 
     // announce the operation
@@ -50,7 +67,14 @@ static inline RetVal apply_op(SimStackThreadState *th_state, ArgVal arg, int pid
     // This is internally executing fetch and add.
     // It takes the value from the second arg and add it to the first one.
     // AUTHORS COMMENT: "toggle pid's bit in a_toggles, Fetch&Add acts as a full write-barrier"
+    #ifdef DEBUG
+     printf("%s\n", "A Toggles: ");
+    binprintf((&a_toggles)->cell[mybank]);
+    #endif
     TVEC_ATOMIC_ADD_BANK(&a_toggles, &th_state->toggle, mybank);          
+    #ifdef DEBUG
+    binprintf((&a_toggles)->cell[mybank]);
+    #endif
 
     // This is the loop mentioned in the paper.
 
@@ -61,29 +85,60 @@ static inline RetVal apply_op(SimStackThreadState *th_state, ArgVal arg, int pid
         // read reference of struct ObjectState in a local variable lsp_data
         sp_data = (ObjectState *)&pool[old_sp.struct_data.index];    
 
-        // This just copies the bank from the second arg to the first one.
+#ifdef DEBUG
+        // Applied tell which all PUSH operations has been applied.
+        printf("%s\n", "sp_data.applied" );
+        binprintf((&sp_data->applied)->cell[mybank]);
+        #endif
         TVEC_ATOMIC_COPY_BANKS(&diffs, &sp_data->applied, mybank);
 
+#ifdef DEBUG
         // This XOR the bank of the second and third arg and stores the result to the first arg.
         // Authors note: determine the set of active processes
+        printf("%s\n","diffs" );
+        binprintf((&diffs)->cell[mybank]);
+        #endif
         TVEC_XOR_BANKS(&diffs, &diffs, &th_state->my_bit, mybank);           
+        #ifdef DEBUG
+        binprintf((&diffs)->cell[mybank]);
+        #endif
 
         // This checks whether in the bank 0(for this code purposes) whether the pid bit is set or not.
         // Authors comment :if the operation has already been applied return
-        if (TVEC_IS_SET(diffs, pid))                                      
+        if (TVEC_IS_SET(diffs, pid)){                                      
+            #ifdef DEBUG
+            printf("%s\n", "Breaking out");
+            #endif
             break;
+        }
 
         *lsp_data = *sp_data;
         // This is an atomic read, since a_toogles is volatile. This is always fetched from the memory.
         l_toggles = a_toggles;
-        if (old_sp.raw_data != sp.raw_data)
+        #ifdef DEBUG
+        printf("%s\n", "raw_data");
+        binprintf(old_sp.raw_data);
+        binprintf(sp.raw_data);
+        #endif
+        if (old_sp.raw_data != sp.raw_data){
+            #ifdef DEBUG
+            printf("%s\n", "Continuing");
+            #endif
             continue;
+        }
 
         // Returns a vector which containt the bitwise XOR of first and the second arg.
         diffs = TVEC_XOR(lsp_data->applied, l_toggles);
+        #ifdef DEBUG
+        printf("%s\n", "diffs");
+        binprintf(diffs.cell[mybank]);
+        #endif
         push_counter = 0;
 
         // As the name suggests this just makes everything zero.
+        #ifdef DEBUG
+        printf("%s\n", "Setting everything to zero" );
+        #endif
         TVEC_SET_ZERO(&pops);
 
         for (i = 0, prefix = 0; i < _TVEC_CELLS_; i++, prefix += _TVEC_BIWORD_SIZE_) {
@@ -91,9 +146,13 @@ static inline RetVal apply_op(SimStackThreadState *th_state, ArgVal arg, int pid
                 register int pos, proc_id;
 
                 pos = bitSearchFirst(diffs.cell[i]);
+                #ifdef DEBUG
+                printf("%s %d\n","pos is: ",pos );
+                #endif
                 proc_id = prefix + pos;
                 diffs.cell[i] ^= 1L << pos;
                 tmp_arg = announce[proc_id];
+                // printf("%s: %d\n","tmp_arg is ",tmp_arg );
                 if (tmp_arg == POP) {
                     pops.cell[i] |= 1L << pos;
                 } else if(tmp_arg == PUSH) {
@@ -128,6 +187,9 @@ static inline RetVal apply_op(SimStackThreadState *th_state, ArgVal arg, int pid
             CAS64(&sp.raw_data, old_sp.raw_data, new_sp.raw_data)) {
             th_state->local_index = (th_state->local_index + 1) % LOCAL_POOL_SIZE;
             // th_state->backoff = (th_state->backoff >> 1) | 1;
+        #ifdef DEBUG
+        printf("%s %d\n", "Returning ", lsp_data->ret[pid]);
+        #endif
             return lsp_data->ret[pid];
         }
         // else {
@@ -172,7 +234,7 @@ static inline void Execute(void* Arg) {
         // Push
         apply_op(&th_state, (ArgVal) PUSH, id);
         // Pop
-        apply_op(&th_state, (ArgVal) POP, id);
+       apply_op(&th_state, (ArgVal) POP, id);
     }
     //stop_cpu_counters(id);
 }
@@ -234,7 +296,7 @@ int main(int argc, char *argv[]) {
     d2 = getTimeMillis();
 
     printf("time: %d\t", (int) (d2 - d1));
-    printStats();
+    // printStats();
 
     if (pthread_barrier_destroy(&barr)) {
         printf("Could not destroy the barrier\n");

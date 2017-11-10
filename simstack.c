@@ -211,10 +211,10 @@ static inline RetVal apply_op(SimStackThreadState *th_state, ArgVal arg, int pid
             th_state->backoff = (th_state->backoff >> 1) | 1;
             return lsp_data->ret[pid];
         }
-        else {
-            if (th_state->backoff < MAX_BACK) th_state->backoff <<= 1;
-            rollback(&th_state->pool_node, push_counter);
-        }
+        // else {
+        //     if (th_state->backoff < MAX_BACK) th_state->backoff <<= 1;
+        //     rollback(&th_state->pool_node, push_counter);
+        // }
     }
     return pool[sp.struct_data.index].ret[pid];         // return the value found in the record stored there
 }

@@ -4,12 +4,12 @@
 
 // Shared variables
 static int MAX_BACK = 0;
-volatile pointer_t sp CACHE_ALIGN;
-volatile ToggleVector a_toggles CACHE_ALIGN;
+volatile pointer_t sp ;
+volatile ToggleVector a_toggles ;
 // _TVEC_BIWORD_SIZE_ is a performance workaround for 
 // array announce. Size N_THREADS is algorithmically enough.
-volatile ArgVal announce[N_THREADS + _TVEC_BIWORD_SIZE_] CACHE_ALIGN;
-volatile ObjectState pool[LOCAL_POOL_SIZE * N_THREADS + 1] CACHE_ALIGN;
+volatile ArgVal announce[N_THREADS + _TVEC_BIWORD_SIZE_] ;
+volatile ObjectState pool[LOCAL_POOL_SIZE * N_THREADS + 1] ;
 
 
 
@@ -36,12 +36,7 @@ void SHARED_OBJECT_INIT(int pid) {
         // OBJECT'S INITIAL VALUE
         // ----------------------
         pool[LOCAL_POOL_SIZE * N_THREADS].head = null;
-
         TVEC_SET_ZERO((ToggleVector *)&pool[LOCAL_POOL_SIZE * N_THREADS].applied);
-#ifdef DEBUG
-        pool[LOCAL_POOL_SIZE * N_THREADS].counter = 0;
-#endif
-        MAX_BACK *= 100;
-        FullFence();
+
     }
 }

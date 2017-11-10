@@ -11,13 +11,9 @@ Now running the command
 
 gives error. What a surprise !! Digging some deep gives the comand use for compilation, which was failing. Command is:
 
-`
-gcc simstack.c -Wall -O3 -msse3 -ftree-vectorize -ftree-vectorizer-verbose=0 -finline-functions -lpthread -march=native -mtune=native -DN_THREADS=$2 -DUSE_CPUS=$3 -D_GNU_SOURCE -pipe -lm
-`
+`gcc simstack.c -Wall -O3 -msse3 -ftree-vectorize -ftree-vectorizer-verbose=0 -finline-functions -lpthread -march=native -mtune=native -DN_THREADS=$2 -DUSE_CPUS=$3 -D_GNU_SOURCE -pipe -lm`
 
-`
-gcc -Wall -pthread simstack.c 
-`
+`gcc -Wall -pthread simstack.c `
 
 This is working
 
