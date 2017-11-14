@@ -6,9 +6,7 @@
 static int MAX_BACK = 0;
 volatile pointer_t sp ;
 volatile ToggleVector a_toggles ;
-// _TVEC_BIWORD_SIZE_ is a performance workaround for 
-// array announce. Size N_THREADS is algorithmically enough.
-volatile ArgVal announce[N_THREADS + _TVEC_BIWORD_SIZE_] ;
+volatile ArgVal announce[N_THREADS ] ;
 volatile ObjectState pool[LOCAL_POOL_SIZE * N_THREADS + 1] ;
 
 

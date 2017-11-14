@@ -171,18 +171,18 @@ static inline int TVEC_COUNT_BITS(ToggleVector tv) {
     return count;
 }
 
-pthread_mutex_t lock;
+// pthread_mutex_t lock;
 
 static void binprintf(int v)
 {
-    pthread_mutex_lock(&lock);
+    // pthread_mutex_lock(&lock);
     unsigned int mask = 1 << sizeof (int) * CHAR_BIT - 1;
     while(mask) {
-        printf("%d", (v&mask ? 1 : 0));
+        sync_printf("%d", (v&mask ? 1 : 0));
         mask >>= 1;
     }
-    printf("%s\n","");
-    pthread_mutex_unlock(&lock);
+    sync_printf("%s\n","");
+    // pthread_mutex_unlock(&lock);
 }
 
 #endif

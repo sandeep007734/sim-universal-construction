@@ -15,9 +15,9 @@
 // Define the number of threads that you like to run experiments.
 // In case N_THREADS > USE_CPUS, two or more threads may run in
 // any processing core.
-#ifndef N_THREADS
-#    define N_THREADS              32
-#endif
+// #ifndef N_THREADS
+// #    define N_THREADS              32
+// #endif
 
 // Definition: MAX_WORK
 // --------------------
@@ -36,7 +36,7 @@
 // operations that will be executed.
 // #define RUNS                       (10000000 / N_THREADS)
 // #define RUNS                       100000
-#define RUNS                       1000
+// #define RUNS                       1000
 
 // Definition: DEBUG
 // -----------------
@@ -86,5 +86,8 @@
 // that you 'd like to use different argument values in each
 // atomic object, redefine it in object's source file.
 #define ArgVal                     int32_t
+
+// int N_THREADS = 1;
+// int RUNS = 1;
 
 #endif

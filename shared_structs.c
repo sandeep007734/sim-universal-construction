@@ -2,6 +2,7 @@
 typedef struct Node{
     volatile struct Node *next; // Pointer to the next node.
     Object value;               // Value to be stored.
+    int index;
 } Node;
 
 // // This is the State which is mentioend in tje papers.

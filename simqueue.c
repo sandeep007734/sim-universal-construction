@@ -17,10 +17,11 @@
 #define INIT_QUEUE_SIZE            0
 
 
-typedef struct Node {
-    Object obj;
-    struct Node *next;
-} Node;
+// typedef struct Node {
+//     Object obj;
+//     struct Node *next;
+//      int index=0;
+// } Node;
 
 
 typedef union pointer_t {

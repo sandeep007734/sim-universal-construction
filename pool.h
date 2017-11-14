@@ -21,8 +21,6 @@ typedef struct PoolStruct {
 } PoolStruct;
 
 inline static void init_pool(PoolStruct *pool, int obj_size) {
-    if(obj_size != 16)
-        printf("%s %d\n","Object size is: ",obj_size );
     void *objects;
     int i;
 
