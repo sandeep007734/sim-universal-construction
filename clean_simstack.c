@@ -4,8 +4,8 @@
 #include <stdint.h>
 #include <stdarg.h>
 
-#define N_THREADS                   64
-#define RUNS                        2
+#define N_THREADS                   100
+#define RUNS                        1000
 
 int sync_printf(const char *format, ...);
 
@@ -38,9 +38,9 @@ static inline RetVal apply_op(SimStackThreadState *th_state, ArgVal arg, int pid
     ArgVal tmp_arg;
 
     mybank = TVEC_GET_BANK_OF_BIT(pid);				
-    if(mybank!=0){
-        sync_printf("%s\n", "ERROR-----------");
-    }
+    // if(mybank!=0){
+    //     sync_printf("%s\n", "ERROR-----------");
+    // }
 
     // printf("\n%s\n","-----------" );
     // printf("%s %d\n", "my_bit: ", pid);
@@ -92,7 +92,7 @@ static inline RetVal apply_op(SimStackThreadState *th_state, ArgVal arg, int pid
         // printf("%s\n", "diffs");
         // binprintf(diffs.cell[mybank]);
         if (TVEC_IS_SET(diffs, pid)){                                   // If my position is set that means someone is helping me .        
-            printf("%s\n", "Breaking Out");                  
+            // printf("%s\n", "Breaking Out");                  
             break;
         }
 
@@ -158,9 +158,10 @@ static inline RetVal apply_op(SimStackThreadState *th_state, ArgVal arg, int pid
         if (old_sp.raw_data==sp.raw_data &&  CAS64(&sp.raw_data, old_sp.raw_data, new_sp.raw_data)) {
             th_state->local_index = (th_state->local_index + 1) % LOCAL_POOL_SIZE;
             return lsp_data->ret[pid];
-        }else{
-            printf("%s\n","CAS Failed." );
         }
+        // else{
+        //     printf("%s\n","CAS Failed." );
+        // }
     }
 return pool[sp.struct_data.index].ret[pid];         // return the value found in the record stored there
 }
