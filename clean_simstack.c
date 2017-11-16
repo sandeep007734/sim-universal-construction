@@ -4,8 +4,8 @@
 #include <stdint.h>
 #include <stdarg.h>
 
-#define N_THREADS                   100
-#define RUNS                        1000
+#define N_THREADS                   10
+#define RUNS                        10
 
 int sync_printf(const char *format, ...);
 
@@ -197,12 +197,17 @@ static inline void Execute(void* Arg) {
     }
 //start_cpu_counters(id);
     for (i = 0; i < RUNS; i++) {
-        apply_op(&th_state, (ArgVal) PUSH, id);
+        apply_op(&th_state, (ArgVal) PUSH, i);
+        long val = apply_op(&th_state, (ArgVal) POP, id);
+        printf("%d, ", val );
+        if(i % 30 ==0){
+            printf("\n");
+        }
     }
     // printf("%s\n", "=============");
-    for (i = 0; i < RUNS; i++) {
-        // apply_op(&th_state, (ArgVal) POP, id);
-    }
+    // for (i = 0; i < RUNS; i++) {
+        
+    // }
 //stop_cpu_counters(id);
 }
 
