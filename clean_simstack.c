@@ -38,70 +38,37 @@ static inline RetVal apply_op(SimStackThreadState *th_state, ArgVal arg, int pid
     ArgVal tmp_arg;
 
     mybank = TVEC_GET_BANK_OF_BIT(pid);				
-    // if(mybank!=0){
-    //     sync_printf("%s\n", "ERROR-----------");
-    // }
-
-    // printf("\n%s\n","-----------" );
-    // printf("%s %d\n", "my_bit: ", pid);
-    // fflush(stdout);                       // Setting i bit/
-    // binprintf((&th_state->my_bit)->cell[mybank]);
-    // fflush(stdout);
     TVEC_REVERSE_BIT(&th_state->my_bit, pid);    
-    // printf("%s\n", "rev: my_bit");                       // Setting i bit/
-    // binprintf((&th_state->my_bit)->cell[mybank]);
-
-    // printf("%s\n","th_state->toggle" );
-    // binprintf((&th_state->toggle)->cell[mybank]);
     TVEC_NEGATIVE_BANK(&th_state->toggle, &th_state->toggle, mybank);   
-    // printf("%s\n","beg: th_state->toggle" );
-    // binprintf((&th_state->toggle)->cell[mybank]);
+
 
     lsp_data = (ObjectState *)&pool[pid * LOCAL_POOL_SIZE + th_state->local_index]; // stack pointer data.
-     // printf("%s %p\n","lsp_data", lsp_data );
-    // Node *temp = lsp_data->head;
-    // if(temp!=NULL)
-    //     printf("%s %d\n", "lsp_data: ",temp->index);
-    // else
-    //     printf("%s\n", "Head was NULL");
 
     announce[pid] = arg;                                                // Announce the operation.                  
 
-    // printf("%s\n", "a_toggles");
-    // binprintf(a_toggles.cell[mybank]);
     TVEC_ATOMIC_ADD_BANK(&a_toggles, &th_state->toggle, mybank);        // Toggle the ith bit at a_toggles.
-    // printf("%s\n", "a_toggles");
-    // binprintf(a_toggles.cell[mybank]);
 
     for (j = 0; j < 2; j++) {   
-        // printf("%s %d\n","sp index",sp.struct_data.index );  
-        // printf("%s %p\n","old_sp", old_sp );        
+      
         old_sp = sp;
-        // printf("%s %p\n","sp", sp ); 
-        // printf("%s %p\n","old_sp", old_sp );  		                                            // Reference for stack pointer (stack top)
-         // printf("%s %p\n","sp", sp );
-          // printf("%s %p\n","old_sp", old_sp );
+    
         sp_data = (ObjectState *)&pool[old_sp.struct_data.index];  
-         // printf("%s %p\n","sp_data", sp_data );  
-        // printf("%s\n", "sp_data applied");
-        // binprintf((&sp_data->applied)->cell[mybank]);
+        
 
         TVEC_ATOMIC_COPY_BANKS(&diffs, &sp_data->applied, mybank);
         TVEC_XOR_BANKS(&diffs, &diffs, &th_state->my_bit, mybank);      // Diffs store the sets of active threads.     
 
-        // printf("%s\n", "diffs");
-        // binprintf(diffs.cell[mybank]);
+      
         if (TVEC_IS_SET(diffs, pid)){                                   // If my position is set that means someone is helping me .        
-            // printf("%s\n", "Breaking Out");                  
+                           
             break;
         }
 
-        // printf("%s %p\n","lsp_data", lsp_data );
+      
         *lsp_data = *sp_data;   
-        // printf("%s %p\n","lsp_data", lsp_data );     
-        // printf("%s %p\n","l_toggles", l_toggles );                                     // Stack pointer data.
+                                       // Stack pointer data.
         l_toggles = a_toggles;                                          //
-        // printf("%s %p\n","l_toggles", l_toggles );
+       
 
 
 
@@ -121,40 +88,29 @@ static inline RetVal apply_op(SimStackThreadState *th_state, ArgVal arg, int pid
                 pos = bitSearchFirst(diffs.cell[i]);    // get a thread to help
                 proc_id = prefix + pos;                 // finds its thread it
 
-                // printf("%s %d\n", "Work left out for thread", proc_id);
-                // binprintf(diffs.cell[mybank]);
+             
 
                 diffs.cell[i] ^= (1L << pos);             // tell everyone that I am doing it
                 tmp_arg = announce[proc_id];            // get the work from announce
                 if (tmp_arg == POP) {                   // Do the work.
-                    // printf("%s\n", "Popping");
-                    // pops.cell[i] |= 1L << pos;
+                
                     pop(lsp_data, proc_id);
                 } else if(tmp_arg == PUSH) {
-                    // printf("%s\n", "Pushing" );
+                    
                     push(th_state, lsp_data, tmp_arg);
-                    // push_counter++;
+                   
                 }
             }
         }
 
-// change applied to be equal to what was read in a_toggles
-        // printf("%s %p\n","lsp_data->applied", lsp_data->applied ); 
-        // printf("%s %p\n","lsp_data", lsp_data ); 
+
         lsp_data->applied =l_toggles; 
-        // printf("%s %p\n","lsp_data", lsp_data ); 
-        // printf("%s %p\n","lsp_data->applied", lsp_data->applied );   
-        // printf("%s \n", "new applied");
-        // binprintf((lsp_data->applied).cell[mybank]);                                    
+                                   
 
 // increase timestamp
         new_sp.struct_data.seq = old_sp.struct_data.seq + 1;        
-
-// store in mod_dw.index the index in pool where lsp_data will be stored         
         new_sp.struct_data.index = LOCAL_POOL_SIZE * pid + th_state->local_index;  
-        // printf("%s %d\n","th_state->index",th_state->local_index );
-        // printf("%s %d %d\n", "New seq and idx",new_sp.struct_data.seq, new_sp.struct_data.index);
-        // printf("%s %ld %ld \n","OLD raw and SP raw",old_sp.raw_data, sp.raw_data );
+
         if (old_sp.raw_data==sp.raw_data &&  CAS64(&sp.raw_data, old_sp.raw_data, new_sp.raw_data)) {
             th_state->local_index = (th_state->local_index + 1) % LOCAL_POOL_SIZE;
             return lsp_data->ret[pid];

@@ -73,6 +73,7 @@ typedef struct SimStackThreadState {
 } SimStackThreadState;
 
 void simStackThreadStateInit(SimStackThreadState *th_state, int pid) {
+  
     th_state->local_index = 0;
     TVEC_SET_ZERO(&th_state->mask);
     TVEC_SET_ZERO(&th_state->my_bit);

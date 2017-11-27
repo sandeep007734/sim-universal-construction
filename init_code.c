@@ -12,6 +12,7 @@ volatile ObjectState pool[LOCAL_POOL_SIZE * N_THREADS + 1] ;
 
 
 void simStackThreadStateInit(SimStackThreadState *th_state, int pid) {
+    // printf("%d\n", (th_state->CACHE_ALIGN));
     th_state->local_index = 0;
     TVEC_SET_ZERO(&th_state->mask);
     TVEC_SET_ZERO(&th_state->my_bit);
